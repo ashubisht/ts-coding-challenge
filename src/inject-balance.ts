@@ -4,10 +4,9 @@ import {accounts} from "./config";
 
 config();
 
-export async function validateAndPrefillBalance(){
-  const recipientAccountId = AccountId.fromString(accounts[0].id);
+export async function validateAndPrefillBalance(recipientAccountId: AccountId){
   const senderAccountId = AccountId.fromString(<string>process.env.MY_ACCOUNT_ID);
-  const senderPrivateKey = PrivateKey.fromStringECDSA(<string>process.env.MY_PRIVATE_KEY);
+  const senderPrivateKey = PrivateKey.fromStringECDSA(<string>process.env.MY_PRIVATE_KEY); // Hedera portal mentions ECDSA
 
   const client = Client.forTestnet().setOperator(senderAccountId, senderPrivateKey);
   const balanceQuery = await new AccountBalanceQuery().setAccountId(recipientAccountId).execute(client);
@@ -32,12 +31,15 @@ export async function validateAndPrefillBalance(){
   console.log(`Refilled ${Hbar.fromTinybars(topUp)} HBAR`);
 }
 
-validateAndPrefillBalance().then(()=> {
-  console.log("Executed");
-}).catch((err)=> {
-  if (err instanceof Error){
-    console.error(err.message);
-  }else{
-    JSON.stringify(err);
+accounts.forEach(async account => {
+  const recipientAccountId = AccountId.fromString(account.id);
+  try{
+    await validateAndPrefillBalance(recipientAccountId);
+  }catch(err){
+    if (err instanceof Error){
+      console.error(err.message);
+    }else{
+      JSON.stringify(err);
+    }
   }
 });
