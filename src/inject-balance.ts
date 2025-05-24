@@ -1,24 +1,25 @@
 import {config} from "dotenv";
-import { AccountBalanceQuery, AccountId, Client, Hbar, HbarUnit, PrivateKey, TransferTransaction } from "@hashgraph/sdk"
+import { AccountBalanceQuery, AccountId, Client, Hbar, HbarUnit, Long, PrivateKey, TransferTransaction } from "@hashgraph/sdk"
 import {accounts} from "./config";
 
 config();
 
-export async function validateAndPrefillBalance(recipientAccountId: AccountId){
+export async function validateAndPrefillBalance(recipientAccountId: AccountId, expectedBalance: number){
   const senderAccountId = AccountId.fromString(<string>process.env.MY_ACCOUNT_ID);
   const senderPrivateKey = PrivateKey.fromStringECDSA(<string>process.env.MY_PRIVATE_KEY); // Hedera portal mentions ECDSA
 
   const client = Client.forTestnet().setOperator(senderAccountId, senderPrivateKey);
   const balanceQuery = await new AccountBalanceQuery().setAccountId(recipientAccountId).execute(client);
   const balance = balanceQuery.hbars.toTinybars();
-  const targetBalance = Hbar.from(10, HbarUnit.Hbar).toTinybars();
-  const topUp = targetBalance.subtract(balance);
-
-  if(topUp.lessThanOrEqual("0")){
+  const targetBalance = Hbar.from(expectedBalance, HbarUnit.Hbar).toTinybars();
+  
+  if(balance.compare(targetBalance) >= 0){
     console.log(`Amount need not be prefilled. Account id ${recipientAccountId} has enough balance: ${balanceQuery.hbars.toString(HbarUnit.Hbar)}`);
     client.close();
     return;
   }
+
+  const topUp = targetBalance.subtract(balance);
 
   const transferTransaction = await new TransferTransaction()
     .addHbarTransfer(senderAccountId, Hbar.fromTinybars(topUp).negated())
@@ -34,7 +35,7 @@ export async function validateAndPrefillBalance(recipientAccountId: AccountId){
 accounts.forEach(async account => {
   const recipientAccountId = AccountId.fromString(account.id);
   try{
-    await validateAndPrefillBalance(recipientAccountId);
+    await validateAndPrefillBalance(recipientAccountId, 30);
   }catch(err){
     if (err instanceof Error){
       console.error(err.message);
