@@ -1,9 +1,10 @@
 import { Given, Then, When } from "@cucumber/cucumber";
 import { accounts } from "../../src/config";
-import { AccountBalanceQuery, AccountId, Client, PrivateKey } from "@hashgraph/sdk";
+import { createToken } from "../../src/token";
+import { AccountBalanceQuery, AccountId, Client, PrivateKey, TokenInfoQuery } from "@hashgraph/sdk";
 import assert from "node:assert";
 
-const client = Client.forTestnet()
+const client = Client.forTestnet();
 
 Given(/^A Hedera account with more than (\d+) hbar$/, async function (expectedBalance: number) {
   const account = accounts[0]
@@ -13,29 +14,46 @@ Given(/^A Hedera account with more than (\d+) hbar$/, async function (expectedBa
 
 //Create the query request
   const query = new AccountBalanceQuery().setAccountId(MY_ACCOUNT_ID);
-  const balance = await query.execute(client)
-  assert.ok(balance.hbars.toBigNumber().toNumber() > expectedBalance)
-
+  const balance = await query.execute(client);
+  assert.ok(balance.hbars.toBigNumber().toNumber() > expectedBalance, `Account balance is: ${balance.hbars.toBigNumber().toNumber()}`)
 });
 
 When(/^I create a token named Test Token \(HTT\)$/, async function () {
 
+  const clientOperator = client.getOperator();
+  if(clientOperator == null){
+    assert.fail("Client operator is null");
+  }
+
+  // Not modifying test case statement above, 
+  // so using hardcoded values in this function instead of parameters as used in other test cases
+  const tokenTransaction = await createToken("Test Token", "HTT", 2, client);
+  const receipt = await tokenTransaction.getReceipt(client)
+  this.tokenId = receipt.tokenId;
+  assert.ok(this.tokenId, "Received invalid tokenId");
 });
 
-Then(/^The token has the name "([^"]*)"$/, async function () {
-
+Then(/^The token has the name "([^"]*)"$/, async function (name: string) {
+  const tokenInfo = await new TokenInfoQuery().setTokenId(this.tokenId).execute(client);
+  assert.ok(tokenInfo.name == name);
 });
 
-Then(/^The token has the symbol "([^"]*)"$/, async function () {
-
+Then(/^The token has the symbol "([^"]*)"$/, async function (symbol: string) {
+  const tokenInfo = await new TokenInfoQuery().setTokenId(this.tokenId).execute(client);
+  assert.ok(tokenInfo.symbol == symbol);
 });
 
-Then(/^The token has (\d+) decimals$/, async function () {
-
+Then(/^The token has (\d+) decimals$/, async function (decimals: number) {
+  const tokenInfo = await new TokenInfoQuery().setTokenId(this.tokenId).execute(client);
+  assert.ok(tokenInfo.decimals == decimals)
 });
 
 Then(/^The token is owned by the account$/, async function () {
-
+  const tokenInfo = await new TokenInfoQuery().setTokenId(this.tokenId).execute(client);
+  const clientOperator = client.getOperator();
+  assert.ok(clientOperator !== null, "Invalid client");
+  assert.ok(tokenInfo.treasuryAccountId !== null, "Treasury Id should not be null");
+  assert.ok(tokenInfo.treasuryAccountId.equals(clientOperator.accountId));
 });
 
 Then(/^An attempt to mint (\d+) additional tokens succeeds$/, async function () {
