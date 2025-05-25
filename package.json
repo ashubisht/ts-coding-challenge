@@ -10,12 +10,12 @@
   "scripts": {
     "test": "cucumber-js -p default --exit",
     "test:dev": "cucumber-js -p default --tags '@dev' --exit",
-    "test:wip": "cucumber-js -p default --tags 'not @wip' --exit"
+    "test:wip": "cucumber-js -p default --tags '@wip' --exit",
+    "refill": "ts-node src/inject-balance.ts"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^10.8.0",
     "@hashgraph/sdk": "^2.47.0",
-    "@types/cucumber": "^7.0.0",
     "@types/node": "^20.14.9",
     "cucumber-pretty": "^6.0.1",
     "cucumber-tsflow": "^4.4.4",
@@ -25,5 +25,8 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.5.2"
   },
-  "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39"
+  "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39",
+  "dependencies": {
+    "dotenv": "^16.5.0"
+  }
 }
