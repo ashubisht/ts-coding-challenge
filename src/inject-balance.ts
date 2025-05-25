@@ -35,7 +35,7 @@ export async function validateAndPrefillBalance(recipientAccountId: AccountId, e
 accounts.forEach(async account => {
   const recipientAccountId = AccountId.fromString(account.id);
   try{
-    await validateAndPrefillBalance(recipientAccountId, 30);
+    await validateAndPrefillBalance(recipientAccountId, 100);
   }catch(err){
     if (err instanceof Error){
       console.error(err.message);
